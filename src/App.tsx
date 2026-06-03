@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AtlasLogo } from './components/AtlasLogo';
 import { AppSimulator } from './components/AppSimulator';
+import { ScreenshotShowcase } from './components/ScreenshotShowcase';
 import { InstallGuide } from './components/InstallGuide';
 import { 
   Github, 
@@ -55,6 +56,7 @@ export default function App() {
 
           <div className="hidden sm:flex items-center gap-6 text-xs font-semibold text-slate-300">
             <a href="#simulator" className="hover:text-white transition-colors">Interactive Demo</a>
+            <a href="#screenshots" className="hover:text-white transition-colors">Screenshots</a>
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#installation" className="hover:text-white transition-colors">Install Guide</a>
             <a href="https://github.com/Vatteck/atlas" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">
@@ -205,6 +207,9 @@ export default function App() {
 
         </div>
       </section>
+
+      {/* --- SECTION: SCREENSHOT SHOWCASE --- */}
+      <ScreenshotShowcase />
 
       {/* --- SECTION: BENTO GRID HIGHLIGHTS/FEATURES --- */}
       <section id="features" className="py-20 bg-[#07090e] relative z-10">
