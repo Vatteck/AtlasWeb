@@ -1,19 +1,34 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img src="https://raw.githubusercontent.com/Vatteck/Atlas/refs/heads/master/atlas/view/resources/img/logo.svg" alt="Atlas Logo" width="120" />
 </div>
 
-# Run and deploy your AI Studio app
+# AtlasWeb
 
-This contains everything you need to run your app locally.
-https://ai.studio/apps/1c18cdbc-dca4-4443-a61b-71236b18146a
+This repository hosts the official landing page for **Atlas**, the ultimate graphical package manager for Arch Linux.
 
-## Run Locally
+## Features
 
-**Prerequisites:**  Node.js
+- **Interactive Dashboard Simulator**: A reconstructed web simulator of Atlas's layout.
+- **Screenshot Showcase**: High-resolution interactive gallery of the desktop application.
+- **Responsive Design**: Built with React, Tailwind CSS v4, and Framer Motion.
 
+## Development
+
+**Prerequisites:** Node.js 20+
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Run the local development server:
+   ```bash
+   npm run dev
+   ```
+3. Build for production:
+   ```bash
+   npm run build
+   ```
+
+## Deployment
+
+The site is automatically deployed to GitHub Pages via GitHub Actions when changes are pushed to the `main` branch.
