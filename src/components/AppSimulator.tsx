@@ -697,7 +697,7 @@ export const AppSimulator: React.FC = () => {
               <HelpCircle size={15} />
             </button>
           </div>
-          <span className="font-mono text-[10px] text-slate-600">v0.10.7 (Arch)</span>
+          <span className="font-mono text-[10px] text-slate-600">v0.12.0 (Arch)</span>
         </div>
       </div>
 
