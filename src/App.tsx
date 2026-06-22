@@ -3,6 +3,7 @@ import { AtlasLogo } from './components/AtlasLogo';
 import { AppSimulator } from './components/AppSimulator';
 import { ScreenshotShowcase } from './components/ScreenshotShowcase';
 import { InstallGuide } from './components/InstallGuide';
+import { useLatestVersion } from './hooks/useLatestVersion';
 import { 
   Github, 
   Layers, 
@@ -25,10 +26,11 @@ import { motion } from 'motion/react';
 
 export default function App() {
   const [copied, setCopied] = useState(false);
+  const version = useLatestVersion();
 
   // Quick action clipboard trigger
   const handleCopyInstall = () => {
-    navigator.clipboard.writeText('yay -S atlas-pm-git');
+    navigator.clipboard.writeText('yay -S atlas-pm');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -96,7 +98,7 @@ export default function App() {
           className="inline-flex items-center gap-2 px-3 py-1 bg-rose-950/25 border border-rose-900/40 rounded-full text-xs font-semibold tracking-wide text-rose-300 mx-auto select-none"
         >
           <Sparkles size={12} className="text-rose-450 animate-pulse" />
-          <span>Latest Release: v0.12.0 — The Polish-and-Trust Release</span>
+          <span>Latest Release: {version}</span>
         </motion.div>
 
         {/* Dynamic Display Slogan Heading */}
@@ -107,7 +109,7 @@ export default function App() {
             transition={{ delay: 0.1 }}
             className="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1]"
           >
-            The Ultimate Graphical <span className="text-transparent bg-clip-text bg-gradient-to-r from-atlas-red-bright via-pink-500 to-rose-400">Package Manager</span> for Arch Linux
+            The AUR Isn't as Safe as It Used to Be.<br />Atlas <span className="text-transparent bg-clip-text bg-gradient-to-r from-atlas-red-bright via-pink-500 to-rose-400">Makes It Legible</span>
           </motion.h1>
           
           <motion.p 
@@ -116,7 +118,7 @@ export default function App() {
             transition={{ delay: 0.2 }}
             className="text-sm sm:text-base text-slate-400 font-sans tracking-wide leading-relaxed"
           >
-            Search, install, update, downgrade, and remove software across <strong>Arch Repos, the AUR, Flatpaks, and AppImages</strong>. Pre-flight transaction previews, a first-class PKGBUILD viewer, system health monitoring, and Flatseal-grade Flatpak controls — built as a community fork of <em>bauh</em> around a pure-Python pywebview engine.
+            PKGBUILD diffs in a terminal are overwhelming — most people skip past them. Atlas surfaces suspicious build patterns, maintainer changes, and source-level trust signals in a clean GUI, so you actually see the warning before you click install. Arch repos, AUR, Flatpak, and AppImage — all in one app, with themes, accent colors, and a ~30% faster launch in 0.14.
           </motion.p>
         </div>
 
@@ -140,7 +142,7 @@ export default function App() {
           <div className="bg-[#111420] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-4 justify-between font-mono text-xs sm:text-sm shadow-xl select-none">
             <div className="flex items-center gap-2.5 font-mono text-slate-200 pl-1.5">
               <Terminal size={14} className="text-rose-500 font-mono" />
-              <span className="font-mono text-rose-350 select-text">yay -S <strong className="font-mono text-white font-semibold">atlas-pm-git</strong></span>
+              <span className="font-mono text-rose-350 select-text">yay -S <strong className="font-mono text-white font-semibold">atlas-pm</strong></span>
             </div>
             
             <button
@@ -202,7 +204,7 @@ export default function App() {
           </div>
 
           {/* Interactive mounted simulation console app */}
-          <AppSimulator />
+          <AppSimulator version={version} />
 
         </div>
       </section>

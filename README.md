@@ -4,31 +4,33 @@
 
 # AtlasWeb
 
-This repository hosts the official landing page for **Atlas**, the ultimate graphical package manager for Arch Linux.
+Landing page for **[Atlas](https://github.com/Vatteck/atlas)** — the graphical package
+manager that makes AUR safety legible for Arch Linux users. Built with React, Tailwind
+CSS v4, Framer Motion, and Vite.
 
-## Features
+## What's on the site
 
-- **Interactive Dashboard Simulator**: A reconstructed web simulator of Atlas's layout.
-- **Screenshot Showcase**: High-resolution interactive gallery of the desktop application.
-- **Responsive Design**: Built with React, Tailwind CSS v4, and Framer Motion.
+- **Interactive Demo** — a reconstructed web simulator of Atlas's dashboard, sidebar,
+  package cards, and transaction flow
+- **Screenshot Showcase** — high-resolution gallery with a fullscreen lightbox
+- **Install Guide** — copy-paste commands for AUR helpers, PKGBUILD builds, and from-source
+- **Feature Bento Grid** — visual breakdown of key capabilities
 
 ## Development
 
 **Prerequisites:** Node.js 20+
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Run the local development server:
-   ```bash
-   npm run dev
-   ```
-3. Build for production:
-   ```bash
-   npm run build
-   ```
+```bash
+npm install
+npm run dev       # local dev server
+npm run build     # production build
+```
 
 ## Deployment
 
-The site is automatically deployed to GitHub Pages via GitHub Actions when changes are pushed to the `main` branch.
+Automatically deployed to GitHub Pages via GitHub Actions on push to `main`.
+
+## Version
+
+The version badge fetches the latest Atlas release from the GitHub API at runtime (30-minute
+client-side cache). No rebuild needed when a new Atlas version ships.

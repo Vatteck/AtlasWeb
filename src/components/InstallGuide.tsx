@@ -17,12 +17,12 @@ export const InstallGuide: React.FC = () => {
     {
       id: 'aur',
       name: 'AUR Helper (Arch & CachyOS)',
-      badge: 'Easiest',
-      description: 'The standard and fastest way. Build and register Atlas automatically using AUR helpers such as yay or paru.',
+      badge: 'Recommended',
+      description: 'The standard and fastest way. Install the stable release using an AUR helper such as yay or paru. Prefer atlas-pm (versioned releases); atlas-pm-git tracks HEAD for bleeding-edge builds.',
       commands: [
+        'yay -S atlas-pm',
+        '# or for the latest development build:',
         'yay -S atlas-pm-git',
-        '# or if you prefer paru:',
-        'paru -S atlas-pm-git',
         '# launch the graphical client',
         'atlas'
       ]
@@ -163,7 +163,7 @@ export const InstallGuide: React.FC = () => {
             <ShieldAlert size={16} className="text-rose-500 shrink-0 mt-0.5" />
             <div className="space-y-1 text-slate-400">
               <span className="text-rose-400 font-bold font-display select-none">System Dependencies Warning:</span>
-              <p>Atlas uses a pywebview graphical UI which bridges system GTK3 and WebKit2Gtk libraries. If you launch the source and observe WebKit connection crashes, verify your GPU drivers configuration or start with environment variable set: <code className="font-mono text-[11px] text-indigo-400 bg-slate-900 px-1 py-0.2 rounded font-semibold select-all">WEBPACK_DISABLE_COMPOSITING_MODE=1 atlas</code>.</p>
+              <p>Atlas uses a pywebview graphical UI which bridges system GTK3 and WebKit2Gtk libraries. If you observe WebKit connection crashes, ensure your GPU drivers are configured correctly and run <code className="font-mono text-[11px] text-indigo-400 bg-slate-900 px-1 py-0.2 rounded font-semibold select-all">atlas --logs</code> to enable the WebKit inspector for debugging.</p>
             </div>
           </div>
         )}

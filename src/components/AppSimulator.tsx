@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export const AppSimulator: React.FC = () => {
+export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
   // 1. Core State
   const [activeTab, setActiveTab] = useState<SidebarTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -697,7 +697,7 @@ export const AppSimulator: React.FC = () => {
               <HelpCircle size={15} />
             </button>
           </div>
-          <span className="font-mono text-[10px] text-slate-600">v0.12.0 (Arch)</span>
+          <span className="font-mono text-[10px] text-slate-600">{version ?? 'v0.14.0'} (Arch)</span>
         </div>
       </div>
 
