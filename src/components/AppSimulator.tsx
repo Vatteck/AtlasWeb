@@ -5,7 +5,10 @@ import {
   DiskItem, 
   ActivityLog, 
   AtlasSettings,
-  PackageSource
+  PackageSource,
+  PacnewFile,
+  ThemePreset,
+  AccentColor
 } from '../types';
 import { 
   Search, 
@@ -27,9 +30,20 @@ import {
   Pin,
   Lock,
   Cpu,
-  Bookmark
+  Bookmark,
+  Newspaper,
+  Globe,
+  FolderLock,
+  FileCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { BrowseView } from './simulator/BrowseView';
+import { NewsView } from './simulator/NewsView';
+import { HealthView } from './simulator/HealthView';
+import { PermissionsView } from './simulator/PermissionsView';
+import { DetailModal } from './simulator/DetailModal';
+import { TransactionPreview } from './simulator/TransactionPreview';
+import { PkgbuildViewer } from './simulator/PkgbuildViewer';
 
 export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
   // 1. Core State
@@ -258,8 +272,19 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
     enableNotifications: true,
     enableSuggestions: true,
     enableSnapsFallback: false,
-    enableDebianFallback: false
+    enableDebianFallback: false,
+    theme: 'dark',
+    accent: 'indigo',
+    scanPkgbuilds: true,
+    cleanChroot: true
   });
+
+  // Pacnew files state
+  const [pacnewFiles, setPacnewFiles] = useState<PacnewFile[]>([
+    { path: '/etc/pacman.conf.pacnew', risk: 'warn', riskLabel: 'Medium', package: 'pacman', resolved: false },
+    { path: '/etc/mkinitcpio.conf.pacnew', risk: 'warn', riskLabel: 'Medium', package: 'mkinitcpio', resolved: false },
+    { path: '/etc/pacman.d/mirrorlist.pacnew', risk: 'danger', riskLabel: 'High', package: 'pacman-mirrorlist', resolved: false },
+  ]);
 
   // Logs state
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([
@@ -269,6 +294,11 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
 
   // UI state for operations
   const [selectedPkgForInstall, setSelectedPkgForInstall] = useState<AppPackage | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<AppPackage | null>(null);
+  const [showTransactionPreview, setShowTransactionPreview] = useState(false);
+  const [showPkgbuildViewer, setShowPkgbuildViewer] = useState(false);
+  const [queuedPackages, setQueuedPackages] = useState<string[]>([]);
+  
   const [installStep, setInstallStep] = useState<null | 'password' | 'dependencies' | 'terminal' | 'success'>(null);
   const [sudoPassword, setSudoPassword] = useState('');
   const [providerSelection, setProviderSelection] = useState('1');
@@ -563,20 +593,161 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
   }, [diskItems]);
 
 
+  // Dynamic theme injection
+  const themeStyles = useMemo(() => {
+    const accents = {
+      indigo: { primary: '#4f46e5', hover: '#6366f1', text: '#e0e7ff', border: 'rgba(79, 70, 229, 0.4)', bg: 'rgba(79, 70, 229, 0.15)', textLight: '#4f46e5' },
+      blue: { primary: '#2563eb', hover: '#3b82f6', text: '#dbeafe', border: 'rgba(37, 99, 235, 0.4)', bg: 'rgba(37, 99, 235, 0.15)', textLight: '#2563eb' },
+      teal: { primary: '#0d9488', hover: '#14b8a6', text: '#ccfbf1', border: 'rgba(13, 148, 136, 0.4)', bg: 'rgba(13, 148, 136, 0.15)', textLight: '#0d9488' },
+      green: { primary: '#16a34a', hover: '#22c55e', text: '#dcfce7', border: 'rgba(22, 163, 74, 0.4)', bg: 'rgba(22, 163, 74, 0.15)', textLight: '#16a34a' },
+      rose: { primary: '#e11d48', hover: '#f43f5e', text: '#ffe4e6', border: 'rgba(225, 29, 72, 0.4)', bg: 'rgba(225, 29, 72, 0.15)', textLight: '#e11d48' },
+      amber: { primary: '#d97706', hover: '#f59e0b', text: '#fef3c7', border: 'rgba(217, 119, 6, 0.4)', bg: 'rgba(217, 119, 6, 0.15)', textLight: '#d97706' }
+    };
+    const activeAccent = accents[settings.accent] || accents.indigo;
+
+    switch (settings.theme) {
+      case 'light':
+        return {
+          bg: '#f8fafc',
+          sidebarBg: '#f1f5f9',
+          topbarBg: '#e2e8f0',
+          cardBg: '#ffffff',
+          cardBorder: '#e2e8f0',
+          text: '#0f172a',
+          textMuted: '#475569',
+          border: '#e2e8f0',
+          accent: activeAccent.primary,
+          accentHover: activeAccent.hover,
+          accentBorder: activeAccent.border,
+          accentBg: activeAccent.bg,
+          accentText: '#ffffff',
+          textAccent: activeAccent.textLight
+        };
+      case 'nord':
+        return {
+          bg: '#2e3440',
+          sidebarBg: '#242933',
+          topbarBg: '#2e3440',
+          cardBg: '#3b4252',
+          cardBorder: '#434c5e',
+          text: '#eceff4',
+          textMuted: '#d8dee9',
+          border: '#434c5e',
+          accent: '#88c0d0', 
+          accentHover: '#8fbcbb',
+          accentBorder: 'rgba(136, 192, 208, 0.4)',
+          accentBg: 'rgba(136, 192, 208, 0.15)',
+          accentText: '#2e3440',
+          textAccent: '#88c0d0'
+        };
+      case 'solarized':
+        return {
+          bg: '#002b36',
+          sidebarBg: '#073642',
+          topbarBg: '#002b36',
+          cardBg: '#073642',
+          cardBorder: '#586e75',
+          text: '#93a1a1',
+          textMuted: '#839496',
+          border: '#586e75',
+          accent: '#b58900', 
+          accentHover: '#cb4b16',
+          accentBorder: 'rgba(181, 137, 0, 0.4)',
+          accentBg: 'rgba(181, 137, 0, 0.15)',
+          accentText: '#fdf6e3',
+          textAccent: '#b58900'
+        };
+      case 'high-contrast':
+        return {
+          bg: '#000000',
+          sidebarBg: '#000000',
+          topbarBg: '#000000',
+          cardBg: '#000000',
+          cardBorder: '#ffffff',
+          text: '#ffffff',
+          textMuted: '#ffffff',
+          border: '#ffffff',
+          accent: '#ffffff',
+          accentHover: '#dddddd',
+          accentBorder: '#ffffff',
+          accentBg: '#111111',
+          accentText: '#000000',
+          textAccent: '#ffffff'
+        };
+      case 'dark':
+      default:
+        return {
+          bg: '#090b11',
+          sidebarBg: '#06080d',
+          topbarBg: '#0d1017',
+          cardBg: '#111420',
+          cardBorder: '#1e293b',
+          text: '#f3f4f6',
+          textMuted: '#94a3b8',
+          border: '#1e293b',
+          accent: activeAccent.primary,
+          accentHover: activeAccent.hover,
+          accentBorder: activeAccent.border,
+          accentBg: activeAccent.bg,
+          accentText: '#ffffff',
+          textAccent: activeAccent.primary
+        };
+    }
+  }, [settings.theme, settings.accent]);
+
   return (
-    <div className="w-full max-w-6xl mx-auto rounded-2xl bg-[#090b11] border border-slate-800/80 overflow-hidden shadow-2xl flex md:flex-row flex-col select-none aspect-auto md:aspect-[16/10] text-sm text-slate-300">
+    <div className="w-full max-w-6xl mx-auto rounded-2xl border overflow-hidden shadow-2xl flex md:flex-row flex-col select-none aspect-auto md:aspect-[16/10] text-sm sim-theme-container">
+      <style dangerouslySetInnerHTML={{__html: `
+        .sim-theme-container {
+          background-color: ${themeStyles.bg} !important;
+          color: ${themeStyles.text} !important;
+          border-color: ${themeStyles.border} !important;
+        }
+        .sim-theme-sidebar {
+          background-color: ${themeStyles.sidebarBg} !important;
+          border-color: ${themeStyles.border} !important;
+        }
+        .sim-theme-topbar {
+          background-color: ${themeStyles.topbarBg} !important;
+          border-color: ${themeStyles.border} !important;
+        }
+        .sim-theme-card {
+          background-color: ${themeStyles.cardBg} !important;
+          border-color: ${themeStyles.cardBorder} !important;
+          color: ${themeStyles.text} !important;
+        }
+        .sim-theme-text-muted {
+          color: ${themeStyles.textMuted} !important;
+        }
+        .sim-theme-accent-btn {
+          background-color: ${themeStyles.accent} !important;
+          color: ${themeStyles.accentText} !important;
+        }
+        .sim-theme-accent-btn:hover {
+          background-color: ${themeStyles.accentHover} !important;
+        }
+        .sim-theme-accent-border {
+          border-color: ${themeStyles.accentBorder} !important;
+        }
+        .sim-theme-accent-bg {
+          background-color: ${themeStyles.accentBg} !important;
+        }
+        .sim-theme-accent-text {
+          color: ${themeStyles.textAccent} !important;
+        }
+      `}} />
       
       {/* 🚀 SIMULATOR SIDEBAR */}
-      <div className="w-full md:w-56 bg-[#06080d] border-r border-slate-900 flex flex-col justify-between p-4">
+      <div className="w-full md:w-56 border-r flex flex-col justify-between p-4 sim-theme-sidebar">
         <div>
           {/* Logo Heading */}
           <div className="flex items-center gap-3 px-2 py-3 border-b border-slate-900 mb-4 select-none">
             {/* Minimal SVG Logo representation */}
-            <div className="relative w-6 h-6 rounded-md bg-atlas-red flex items-center justify-center text-white font-mono font-bold text-xs shadow-inner">
+            <div className="relative w-6 h-6 rounded-md bg-atlas-red flex items-center justify-center text-white font-mono font-bold text-xs shadow-inner sim-theme-accent-btn">
               A
               <div className="absolute inset-0 bg-red-500/20 rounded-md animate-pulse" />
             </div>
-            <span className="font-display font-semibold text-white tracking-widest text-lg">ATLAS</span>
+            <span className="font-display font-semibold text-white tracking-widest text-lg sim-theme-text">ATLAS</span>
             <div className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-950 text-emerald-400 font-mono font-medium border border-emerald-900/50">
               DEMO
             </div>
@@ -586,32 +757,46 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
           <nav className="space-y-1">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all duration-150 ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
                 activeTab === 'dashboard' 
-                  ? 'bg-gradient-to-r from-atlas-red/20 to-transparent text-white border-l-2 border-atlas-red-bright' 
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <LayoutDashboard size={16} />
+                <LayoutDashboard size={14} className={activeTab === 'dashboard' ? 'sim-theme-accent-text' : ''} />
                 <span>Dashboard</span>
               </div>
             </button>
 
             <button
-              onClick={() => setActiveTab('installed')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all duration-150 ${
-                activeTab === 'installed' 
-                  ? 'bg-gradient-to-r from-atlas-red/20 to-transparent text-white border-l-2 border-atlas-red-bright' 
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+              onClick={() => setActiveTab('browse')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'browse' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <CheckCircle size={16} />
+                <Globe size={14} className={activeTab === 'browse' ? 'sim-theme-accent-text' : ''} />
+                <span>Browse</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('installed')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'installed' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CheckCircle size={14} className={activeTab === 'installed' ? 'sim-theme-accent-text' : ''} />
                 <span>Installed</span>
               </div>
               {installedApps.length > 0 && (
-                <span className="text-[11px] bg-slate-900 border border-slate-800 text-slate-300 font-mono px-1.5 py-0.2 rounded-full font-bold">
+                <span className="text-[10px] bg-slate-900 border border-slate-850 text-slate-400 px-1.5 py-0.2 rounded-full font-bold">
                   {installedApps.length}
                 </span>
               )}
@@ -619,68 +804,116 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
 
             <button
               onClick={() => setActiveTab('updates')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all duration-150 ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
                 activeTab === 'updates' 
-                  ? 'bg-gradient-to-r from-atlas-red/20 to-transparent text-white border-l-2 border-atlas-red-bright' 
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Download size={16} />
+                <Download size={14} className={activeTab === 'updates' ? 'sim-theme-accent-text' : ''} />
                 <span>Updates</span>
               </div>
-              <span className={`text-[11px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
                 outOfDatePackages.length > 0 
-                  ? 'bg-[#9b1c1c]/40 text-rose-300 border border-[#9b1c1c]' 
-                  : 'bg-slate-900 border border-slate-800 text-slate-500'
+                  ? 'bg-rose-955 text-rose-400 border border-rose-900/50' 
+                  : 'bg-slate-900 border border-slate-850 text-slate-500'
               }`}>
                 {outOfDatePackages.length}
               </span>
             </button>
 
             <button
-              onClick={() => setActiveTab('disk')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all duration-150 ${
-                activeTab === 'disk' 
-                  ? 'bg-gradient-to-r from-atlas-red/20 to-transparent text-white border-l-2 border-atlas-red-bright' 
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+              onClick={() => setActiveTab('news')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'news' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <HardDrive size={16} />
+                <Newspaper size={14} className={activeTab === 'news' ? 'sim-theme-accent-text' : ''} />
+                <span>News</span>
+              </div>
+              <span className="text-[10px] bg-slate-900 border border-slate-850 text-slate-500 px-1.5 py-0.2 rounded-full font-semibold">
+                2
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('disk')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'disk' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <HardDrive size={14} className={activeTab === 'disk' ? 'sim-theme-accent-text' : ''} />
                 <span>Disk space</span>
               </div>
               {parseFloat(totalCurrentSpaceGb) > 0 && (
-                <span className="text-[10px] text-rose-400 font-mono font-medium">
+                <span className="text-[9px] text-slate-400 font-mono font-medium">
                   {totalCurrentSpaceGb}G
                 </span>
               )}
             </button>
 
             <button
-              onClick={() => setActiveTab('activity')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all duration-150 ${
-                activeTab === 'activity' 
-                  ? 'bg-gradient-to-r from-atlas-red/20 to-transparent text-white border-l-2 border-atlas-red-bright' 
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+              onClick={() => setActiveTab('health')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'health' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Activity size={16} />
+                <Activity size={14} className={activeTab === 'health' ? 'sim-theme-accent-text' : ''} />
+                <span>Health</span>
+              </div>
+              {pacnewFiles.some(f => !f.resolved) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'activity' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Cpu size={14} className={activeTab === 'activity' ? 'sim-theme-accent-text' : ''} />
                 <span>Activity log</span>
               </div>
             </button>
 
             <button
-              onClick={() => setActiveTab('settings')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all duration-150 ${
-                activeTab === 'settings' 
-                  ? 'bg-gradient-to-r from-atlas-red/20 to-transparent text-white border-l-2 border-atlas-red-bright' 
-                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+              onClick={() => setActiveTab('permissions')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'permissions' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Settings size={16} />
+                <FolderLock size={14} className={activeTab === 'permissions' ? 'sim-theme-accent-text' : ''} />
+                <span>Permissions</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs transition-all duration-150 cursor-pointer ${
+                activeTab === 'settings' 
+                  ? 'bg-slate-800/40 text-white font-bold border-l-2 sim-theme-accent-border' 
+                  : 'text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Settings size={14} className={activeTab === 'settings' ? 'sim-theme-accent-text' : ''} />
                 <span>Settings</span>
               </div>
             </button>
@@ -690,19 +923,23 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
         {/* Bottom items */}
         <div className="pt-4 border-t border-slate-900 flex items-center justify-between text-slate-500 text-xs px-2 select-none">
           <div className="flex items-center gap-3">
-            <button className="hover:text-slate-300 transition-colors cursor-pointer" title="Switch Theme (Demo only)">
-              <Sun size={15} />
+            <button 
+              onClick={() => handleSettingChange('theme', settings.theme === 'light' ? 'dark' : 'light')}
+              className="hover:text-slate-350 transition-colors cursor-pointer" 
+              title="Switch Theme"
+            >
+              <Sun size={14} />
             </button>
-            <button className="hover:text-slate-300 transition-colors cursor-pointer" title="Open Wiki Guidelines">
-              <HelpCircle size={15} />
+            <button className="hover:text-slate-350 transition-colors cursor-pointer" title="Open Wiki Guidelines">
+              <HelpCircle size={14} />
             </button>
           </div>
-          <span className="font-mono text-[10px] text-slate-600">{version ?? 'v0.14.0'} (Arch)</span>
+          <span className="font-mono text-[9px] text-slate-600">{version ?? 'v0.14.0'}</span>
         </div>
       </div>
 
       {/* 💻 MAIN DEMO CONSOLE FRAME */}
-      <div className="flex-1 flex flex-col bg-[#0b0d13] min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 sim-theme-panel">
         
         {/* TOP FILTER AND ACTION RAIL */}
         <div className="p-3 bg-[#0d1017] border-b border-slate-900/40 flex flex-wrap items-center justify-between gap-3 select-none">
@@ -777,132 +1014,297 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
+                className="space-y-6 select-none"
               >
-                {/* Simulated notifications / Alerts from settings state */}
-                {packages.some(p => p.isOutOfDate) && (
-                  <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-xl flex items-center justify-between text-xs text-rose-300">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle size={14} className="text-rose-400 shrink-0" />
-                      <span><strong>Out-of-date package flagged!</strong> System scanned 1 AUR package with pending upstream changes.</span>
+                {/* Personalized Greeting */}
+                <div className="flex justify-between items-center border-b border-slate-800/60 pb-3">
+                  <div>
+                    <h2 className="text-sm font-semibold font-display text-white">
+                      Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, Cory
+                    </h2>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Package databases and keyring signatures validated 3 seconds ago.</p>
+                  </div>
+                </div>
+
+                {/* Attention Center Cards Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+                  {/* Card 1: Updates */}
+                  <div 
+                    onClick={() => setActiveTab('updates')}
+                    className={`sim-theme-card border rounded-xl p-3 flex flex-col justify-between h-28 cursor-pointer transition-all hover:-translate-y-0.5 ${
+                      outOfDatePackages.length > 0 ? 'border-rose-900/60 ring-1 ring-rose-500/10' : 'border-slate-800'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="p-1 rounded bg-rose-500/10 text-rose-450">
+                        <Download size={14} />
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-500">Updates</span>
                     </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-300">Software Updates</div>
+                      <div className={`text-xs font-mono font-bold mt-1 ${outOfDatePackages.length > 0 ? 'text-rose-400' : 'text-slate-500'}`}>
+                        {outOfDatePackages.length > 0 ? `${outOfDatePackages.length} pending` : 'Synced'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: System Safety */}
+                  <div 
+                    onClick={() => setActiveTab('settings')}
+                    className={`sim-theme-card border rounded-xl p-3 flex flex-col justify-between h-28 cursor-pointer transition-all hover:-translate-y-0.5 ${
+                      settings.enableTimeshift ? 'border-emerald-900/60' : 'border-amber-900/60'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className={`p-1 rounded ${settings.enableTimeshift ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                        <Shield size={14} />
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-500">Safety</span>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-300">Timeshift Backups</div>
+                      <div className={`text-xs font-mono font-bold mt-1 ${settings.enableTimeshift ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {settings.enableTimeshift ? 'Hook Active' : 'Hook Inactive'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Reclaim Space */}
+                  <div 
+                    onClick={() => setActiveTab('disk')}
+                    className="sim-theme-card border border-slate-800 rounded-xl p-3 flex flex-col justify-between h-28 cursor-pointer transition-all hover:-translate-y-0.5"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="p-1 rounded bg-sky-500/10 text-sky-400">
+                        <HardDrive size={14} />
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-500">Storage</span>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-300">Reclaim Space</div>
+                      <div className="text-xs font-mono font-bold text-sky-400 mt-1">
+                        {totalCurrentSpaceGb} GB footprint
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Recent Activity */}
+                  <div 
+                    onClick={() => setActiveTab('activity')}
+                    className="sim-theme-card border border-slate-800 rounded-xl p-3 flex flex-col justify-between h-28 cursor-pointer transition-all hover:-translate-y-0.5"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="p-1 rounded bg-indigo-500/10 text-indigo-400">
+                        <Cpu size={14} />
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-500">Activity</span>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-300">Recent Logs</div>
+                      <div className="text-xs font-mono font-bold text-indigo-400 mt-1">
+                        {activityLogs.length} actions logged
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 5: AUR Safety / pacnew */}
+                  <div 
+                    onClick={() => setActiveTab('health')}
+                    className={`sim-theme-card border rounded-xl p-3 flex flex-col justify-between h-28 cursor-pointer transition-all hover:-translate-y-0.5 ${
+                      pacnewFiles.some(f => !f.resolved) ? 'border-amber-900/60 ring-1 ring-amber-500/10' : 'border-slate-800'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className={`p-1 rounded ${pacnewFiles.some(f => !f.resolved) ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <FileCode size={14} />
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-500">AUR & Configs</span>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-300">Config Backups</div>
+                      <div className={`text-xs font-mono font-bold mt-1 ${pacnewFiles.some(f => !f.resolved) ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {pacnewFiles.filter(f => !f.resolved).length > 0 
+                          ? `${pacnewFiles.filter(f => !f.resolved).length} .pacnews`
+                          : 'Configs clean'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Popular apps preview grid on Dashboard */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-1 select-none">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-display">System Package Catalog</h3>
                     <button 
-                      onClick={() => setActiveTab('updates')}
-                      className="text-[11px] underline font-semibold text-rose-400 hover:text-rose-300 transition-colors"
+                      onClick={() => setActiveTab('browse')}
+                      className="text-[10px] text-blue-400 hover:text-blue-300 font-bold hover:underline transition-colors cursor-pointer"
                     >
-                      Update now
+                      Browse full category index →
                     </button>
                   </div>
-                )}
 
-                {/* Applications grid */}
-                {filteredApps.length === 0 ? (
-                  <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-center space-y-2">
-                    <Search size={32} className="stroke-[1.5] text-slate-600 block mb-1" />
-                    <p className="font-semibold text-slate-400">No matching applications found</p>
-                    <p className="text-xs text-slate-600 max-w-sm">No packages match "{searchQuery}" under {selectedTypeFilter === 'All' ? 'any filter' : selectedTypeFilter}. Make sure correct sources are enabled in Settings.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {filteredApps.map(pkg => (
-                      <div 
-                        key={pkg.id} 
-                        className={`p-3 bg-[#111420] border rounded-xl flex flex-col justify-between transition-all duration-200 h-[190px] ${
-                          pkg.isInstalled 
-                            ? 'border-emerald-950/60 ring-1 ring-emerald-500/20 glow-red' 
-                            : 'border-slate-800 hover:border-slate-700/80'
-                        }`}
-                      >
-                        <div>
-                          {/* App icon, name, source version */}
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-center gap-2.5 overflow-hidden">
-                              <div className={`w-8 h-8 rounded-lg ${pkg.iconBg} flex items-center justify-center text-white font-display font-semibold shrink-0`}>
-                                {pkg.iconText}
-                              </div>
-                              <div className="min-w-0">
-                                <h3 className="font-semibold text-white truncate text-xs font-display">{pkg.name}</h3>
-                                <div className="text-[10px] text-slate-500 font-mono truncate">
-                                  {pkg.repo} • {pkg.version}
+                  {/* Grid */}
+                  {filteredApps.length === 0 ? (
+                    <div className="h-48 flex flex-col items-center justify-center text-slate-500 text-center space-y-2">
+                      <Search size={28} className="stroke-[1.5] text-slate-650 block mb-1" />
+                      <p className="font-semibold text-slate-400 text-xs">No matching applications found</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {filteredApps.slice(0, 6).map(pkg => (
+                        <div 
+                          key={pkg.id} 
+                          onClick={() => setSelectedPackage(pkg)}
+                          className={`p-3 bg-[#111420] border rounded-xl flex flex-col justify-between transition-all duration-200 h-[190px] cursor-pointer hover:-translate-y-0.5 group ${
+                            pkg.isInstalled 
+                              ? 'border-emerald-950/60 ring-1 ring-emerald-500/20' 
+                              : 'border-slate-800 hover:border-slate-700/80'
+                          }`}
+                        >
+                          <div>
+                            {/* App icon, name, source version */}
+                            <div className="flex items-start justify-between gap-2.5" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-2.5 overflow-hidden">
+                                <div className={`w-8 h-8 rounded-lg ${pkg.iconBg} flex items-center justify-center text-white font-display font-semibold shrink-0`}>
+                                  {pkg.iconText}
+                                </div>
+                                <div className="min-w-0">
+                                  <h3 className="font-semibold text-white truncate text-xs font-display group-hover:text-emerald-450 transition-colors">{pkg.name}</h3>
+                                  <div className="text-[10px] text-slate-500 font-mono truncate">
+                                    {pkg.repo} • {pkg.version}
+                                  </div>
                                 </div>
                               </div>
+
+                              {/* Badge build type metadata if AUR */}
+                              {pkg.selectedSource === 'AUR' && pkg.aurBuildType && (
+                                <span className="text-[8px] bg-sky-950 border border-sky-900/60 text-sky-400 px-1 py-0.2 rounded font-mono font-bold font-semibold uppercase">
+                                  {pkg.aurBuildType}
+                                </span>
+                              )}
                             </div>
 
-                            {/* Badge build type metadata if AUR */}
-                            {pkg.selectedSource === 'AUR' && pkg.aurBuildType && (
-                              <span className="text-[8px] bg-sky-950 border border-sky-900/60 text-sky-400 px-1 py-0.2 rounded font-mono font-bold font-semibold uppercase">
-                                {pkg.aurBuildType}
-                              </span>
-                            )}
+                            {/* App short description */}
+                            <p className="text-[11px] text-slate-400 leading-snug tracking-normal mt-2 line-clamp-3 select-none">
+                              {pkg.description}
+                            </p>
                           </div>
 
-                          {/* App short description */}
-                          <p className="text-[11px] text-slate-400 leading-snug tracking-normal mt-2 line-clamp-3 select-none">
-                            {pkg.description}
-                          </p>
-                        </div>
-
-                        {/* Package controls switcher and installation actions */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-900 flex items-center justify-between gap-1.5">
-                          {/* Unified source switchers */}
-                          <div className="flex items-center gap-1">
-                            {pkg.sources.map(source => {
-                              const active = pkg.selectedSource === source;
-                              return (
-                                <button
-                                  key={source}
-                                  onClick={() => handleSourceChange(pkg.id, source)}
-                                  className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-mono font-semibold transition-colors uppercase ${
-                                    active 
-                                      ? 'bg-atlas-red text-white' 
-                                      : 'bg-slate-900 text-slate-500 hover:text-slate-300'
-                                  }`}
-                                  title={`Switch source to ${source}`}
-                                >
-                                  {source === 'Arch' ? 'ARCH' : source === 'AUR' ? 'AUR' : source === 'Flatpak' ? 'FLAT' : 'APPIMAGE'}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Install/Uninstall trigger */}
-                          <div>
-                            {pkg.isInstalled ? (
-                              <div className="flex items-center gap-1">
-                                {pkg.installedSource && (
-                                  <span className="text-[9px] text-slate-600 font-mono mr-1 lowercase bg-slate-900 px-1 rounded">
-                                    via {pkg.installedSource}
-                                  </span>
-                                )}
-                                
-                                {pkg.id === 'spotify' && (
-                                  <button className="p-1 hover:bg-slate-900 text-amber-500 rounded cursor-pointer" title="Pin this package version from automatic system updates">
-                                    <Pin size={11} className="fill-amber-500/10" />
+                          {/* Package controls switcher and installation actions */}
+                          <div className="mt-3 pt-2.5 border-t border-slate-900/80 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            {/* Unified source switchers */}
+                            <div className="flex items-center gap-1">
+                              {pkg.sources.map(source => {
+                                const active = pkg.selectedSource === source;
+                                return (
+                                  <button
+                                    key={source}
+                                    onClick={() => handleSourceChange(pkg.id, source)}
+                                    className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer font-mono font-semibold transition-colors uppercase ${
+                                      active 
+                                        ? 'bg-atlas-red text-white sim-theme-accent-btn' 
+                                        : 'bg-slate-900 text-slate-500 hover:text-slate-350'
+                                    }`}
+                                    title={`Switch source to ${source}`}
+                                  >
+                                    {source === 'Arch' ? 'ARCH' : source === 'AUR' ? 'AUR' : source === 'Flatpak' ? 'FLAT' : 'APPIMAGE'}
                                   </button>
-                                )}
-                                
+                                );
+                              })}
+                            </div>
+
+                            {/* Install/Uninstall trigger */}
+                            <div>
+                              {pkg.isInstalled ? (
+                                <div className="flex items-center gap-1">
+                                  {pkg.installedSource && (
+                                    <span className="text-[9px] text-slate-600 font-mono mr-1 lowercase bg-slate-900 px-1 rounded">
+                                      via {pkg.installedSource}
+                                    </span>
+                                  )}
+                                  
+                                  <button
+                                    onClick={() => handleUninstall(pkg)}
+                                    className="text-[10px] font-semibold bg-red-955/20 text-rose-450 hover:bg-rose-955/40 border border-rose-900/50 cursor-pointer px-2.5 py-1 rounded transition-colors"
+                                  >
+                                    Uninstall
+                                  </button>
+                                </div>
+                              ) : (
                                 <button
-                                  onClick={() => handleUninstall(pkg)}
-                                  className="text-[10px] font-semibold bg-red-950/20 text-rose-400 hover:bg-red-950/40 border border-red-900/50 cursor-pointer px-2.5 py-1 rounded transition-colors"
+                                  onClick={() => {
+                                    setSelectedPkgForInstall(pkg);
+                                    setShowTransactionPreview(true);
+                                  }}
+                                  className="text-[10px] font-semibold bg-[#4f46e5] text-white hover:bg-indigo-500 cursor-pointer px-3 py-1 rounded transition-all transform hover:scale-[1.03]"
                                 >
-                                  Uninstall
+                                  Install
                                 </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => startInstallFlow(pkg)}
-                                className="text-[10px] font-semibold bg-[#4f46e5] text-white hover:bg-indigo-500 cursor-pointer px-3 py-1 rounded transition-all transform hover:scale-[1.03]"
-                              >
-                                Install
-                              </button>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </motion.div>
+            )}
+
+            {/* TAB: BROWSE */}
+            {activeTab === 'browse' && (
+              <BrowseView
+                onNavigate={(tab) => setActiveTab(tab)}
+                onSelectPackage={(pkg) => setSelectedPackage(pkg)}
+                onInstallPackage={(pkg) => {
+                  setSelectedPkgForInstall(pkg);
+                  setShowTransactionPreview(true);
+                }}
+                onQueuePackage={(pkg) => {
+                  setQueuedPackages(prev => 
+                    prev.includes(pkg.id) ? prev.filter(id => id !== pkg.id) : [...prev, pkg.id]
+                  );
+                }}
+                queuedPackages={queuedPackages}
+              />
+            )}
+
+            {/* TAB: NEWS */}
+            {activeTab === 'news' && (
+              <NewsView />
+            )}
+
+            {/* TAB: HEALTH */}
+            {activeTab === 'health' && (
+              <HealthView
+                onNavigate={(tab) => setActiveTab(tab)}
+                pacnewFiles={pacnewFiles}
+                onResolvePacnew={(path, mode) => {
+                  setPacnewFiles(prev => 
+                    prev.map(f => f.path === path ? { ...f, resolved: true } : f)
+                  );
+                  // Add log on resolve
+                  const now = new Date();
+                  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  setActivityLogs(prev => [
+                    {
+                      id: `log-${Date.now()}`,
+                      timestamp: timeStr,
+                      action: 'cleanup',
+                      pkgName: `Resolved pacnew: ${path.split('/').pop()} (${mode})`,
+                      status: 'success'
+                    },
+                    ...prev
+                  ]);
+                }}
+              />
+            )}
+
+            {/* TAB: PERMISSIONS */}
+            {activeTab === 'permissions' && (
+              <PermissionsView />
             )}
 
             {/* TAB: INSTALLED */}
@@ -1190,18 +1592,79 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                 className="space-y-4 text-xs select-none"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-semibold font-display text-white">Package Settings Workspace</h2>
+                  <h2 className="text-sm font-semibold font-display text-white">System Settings</h2>
                   <span className="text-xs text-[#9b1c1c] font-semibold tracking-wider uppercase font-mono">
                     System Core Config
                   </span>
                 </div>
 
+                {/* Appearance Settings */}
                 <div className="space-y-3 bg-[#111420] border border-slate-800 rounded-xl p-4">
+                  <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-display">Appearance</h3>
+                  
+                  {/* Theme Presets */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
+                    <div>
+                      <h4 className="font-medium text-white text-xs">Desktop Theme Preset</h4>
+                      <p className="text-[10px] text-slate-505">Select active stylesheet preset for the dashboard display.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1 bg-[#0a0c10] border border-slate-900 p-0.5 rounded-lg">
+                      {(['dark', 'light', 'nord', 'solarized', 'high-contrast'] as ThemePreset[]).map((themeName) => (
+                        <button
+                          key={themeName}
+                          onClick={() => handleSettingChange('theme', themeName)}
+                          className={`px-2 py-1 rounded-md text-[9px] font-semibold uppercase cursor-pointer ${
+                            settings.theme === themeName 
+                              ? 'bg-[#1b2234] text-white' 
+                              : 'text-slate-500 hover:text-slate-350'
+                          }`}
+                        >
+                          {themeName === 'high-contrast' ? 'contrast' : themeName}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Accent Colors */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <h4 className="font-medium text-white text-xs">Accent Color Highlight</h4>
+                      <p className="text-[10px] text-slate-505">Pick highlight and sidebar highlight border indicator color.</p>
+                    </div>
+                    <div className="flex gap-1.5 items-center">
+                      {(['indigo', 'blue', 'teal', 'green', 'rose', 'amber'] as AccentColor[]).map((color) => {
+                        const bgClasses = {
+                          indigo: 'bg-indigo-600',
+                          blue: 'bg-blue-600',
+                          teal: 'bg-teal-600',
+                          green: 'bg-green-600',
+                          rose: 'bg-rose-600',
+                          amber: 'bg-amber-600'
+                        };
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => handleSettingChange('accent', color)}
+                            className={`w-4 h-4 rounded-full ${bgClasses[color]} cursor-pointer relative transition-transform hover:scale-110 ${
+                              settings.accent === color ? 'ring-2 ring-white ring-offset-2 ring-offset-[#111420]' : ''
+                            }`}
+                            title={color}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Compilation & Packaging settings */}
+                <div className="space-y-3 bg-[#111420] border border-slate-800 rounded-xl p-4">
+                  <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-display">Compilation & Packaging</h3>
+                  
                   {/* AUR Toggle */}
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
                     <div>
                       <h4 className="font-medium text-white text-xs">Enable AUR Support</h4>
-                      <p className="text-[10px] text-slate-500">Enable searching and compiling packages from Arch User Repository.</p>
+                      <p className="text-[10px] text-slate-505">Enable searching and compiling packages from Arch User Repository.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -1218,7 +1681,7 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
                     <div>
                       <h4 className="font-medium text-white text-xs">Pre-Transaction Timeshift Backup</h4>
-                      <p className="text-[10px] text-slate-500">Safeguard systems by backing up active states before package installations.</p>
+                      <p className="text-[10px] text-slate-505">Safeguard systems by backing up active states before package installations.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -1231,11 +1694,50 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                     </label>
                   </div>
 
+                  {/* Scan PKGBUILDs Toggle */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
+                    <div>
+                      <h4 className="font-medium text-white text-xs">Scan PKGBUILDs before building</h4>
+                      <p className="text-[10px] text-slate-500">Run static security code audits for curl pipes or dangerous root access hooks.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.scanPkgbuilds} 
+                        onChange={(e) => handleSettingChange('scanPkgbuilds', e.target.checked)}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:bg-atlas-red peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                    </label>
+                  </div>
+
+                  {/* Clean Chroot Toggle */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <h4 className="font-medium text-white text-xs">Build in Clean Chroot environment</h4>
+                      <p className="text-[10px] text-slate-500">Compile packages in isolated containers to prevent environment state pollution.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.cleanChroot} 
+                        onChange={(e) => handleSettingChange('cleanChroot', e.target.checked)}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:bg-atlas-red peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Sandbox Integrations settings */}
+                <div className="space-y-3 bg-[#111420] border border-slate-800 rounded-xl p-4">
+                  <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-display">Sandboxing</h3>
+
                   {/* Flatpak Toggle */}
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
                     <div>
                       <h4 className="font-medium text-white text-xs">Flatpak package stream Integration</h4>
-                      <p className="text-[10px] text-slate-500">Query sandboxed Flathub package directories alongside Arch official repositories.</p>
+                      <p className="text-[10px] text-slate-550">Query sandboxed Flathub package directories alongside Arch official repositories.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -1252,7 +1754,7 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
                     <div>
                       <h4 className="font-medium text-white text-xs">Enable AppImage Support</h4>
-                      <p className="text-[10px] text-slate-500">Integrate executable AppImages inside your desktop catalog easily.</p>
+                      <p className="text-[10px] text-slate-550">Integrate executable AppImages inside your catalog easily.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -1269,7 +1771,7 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                   <div className="flex items-center justify-between pt-1">
                     <div>
                       <h4 className="font-medium text-white text-xs">Flatpak installation level context</h4>
-                      <p className="text-[10px] text-slate-500">Manage Flatpaks with root privileges (System) or purely within user boundaries (User).</p>
+                      <p className="text-[10px] text-slate-500">Manage Flatpaks with root privileges (System) or within user boundaries (User).</p>
                     </div>
                     <div className="flex gap-1 bg-[#0a0c10] border border-slate-900 p-0.5 rounded-lg select-none">
                       <button
@@ -1296,7 +1798,7 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-950/20 border border-slate-900 rounded-xl text-[11px] text-slate-500 flex items-center gap-2">
+                <div className="p-3 bg-slate-950/20 border border-slate-900 rounded-xl text-[11px] text-slate-505 flex items-center gap-2">
                   <Shield size={14} className="text-slate-400" />
                   <span>Other package sources (Snap packages, Debian .deb index repositories, standard Webapp Nativefiers) can be re-enabled here if preferred.</span>
                 </div>
@@ -1500,6 +2002,52 @@ export const AppSimulator: React.FC<{ version?: string }> = ({ version }) => {
 
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Package Detail Modal */}
+      <AnimatePresence>
+        {selectedPackage && (
+          <DetailModal
+            pkg={selectedPackage}
+            onClose={() => setSelectedPackage(null)}
+            onInstall={(pkg) => {
+              setSelectedPkgForInstall(pkg);
+              setShowTransactionPreview(true);
+            }}
+            onUninstall={handleUninstall}
+            onOpenPkgbuild={() => setShowPkgbuildViewer(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Pre-transaction Preview Modal */}
+      <AnimatePresence>
+        {showTransactionPreview && (
+          <TransactionPreview
+            pkg={selectedPkgForInstall}
+            onCancel={() => {
+              setShowTransactionPreview(false);
+              setSelectedPkgForInstall(null);
+            }}
+            onProceed={() => {
+              setShowTransactionPreview(false);
+              if (selectedPkgForInstall) {
+                startInstallFlow(selectedPkgForInstall);
+              }
+            }}
+            onViewPkgbuild={() => setShowPkgbuildViewer(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* PKGBUILD Viewer Modal */}
+      <AnimatePresence>
+        {showPkgbuildViewer && (
+          <PkgbuildViewer
+            pkgName={selectedPkgForInstall?.name || selectedPackage?.name || "joplin-appimage"}
+            onClose={() => setShowPkgbuildViewer(false)}
+          />
         )}
       </AnimatePresence>
 
