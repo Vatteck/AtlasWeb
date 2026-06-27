@@ -29,7 +29,7 @@ export const NewsView: React.FC<NewsViewProps> = () => {
     },
     {
       id: 'news-2',
-      title: 'OpenSSL 3.5 update — manual config migration required',
+      title: 'OpenSSL 3.5 update - manual config migration required',
       date: 'June 18, 2026',
       unread: true,
       summary: 'OpenSSL has been updated to version 3.5. Legacy engine configuration files at /etc/ssl/engines.cnf.d/ are no longer autoloaded by default. Users utilizing custom cryptographic engines must migrate their settings to the main openssl.cnf file under the engines section. Consult the official migration guide on the Arch wiki.'

@@ -118,7 +118,7 @@ export default function App() {
             transition={{ delay: 0.2 }}
             className="text-sm sm:text-base text-slate-400 font-sans tracking-wide leading-relaxed"
           >
-            PKGBUILD diffs in a terminal are overwhelming — most people skip past them. Atlas surfaces suspicious build patterns, maintainer changes, and source-level trust signals in a clean GUI, so you actually see the warning before you click install. Arch repos, AUR, Flatpak, and AppImage — all in one app, with themes, accent colors, and a ~30% faster launch in 0.14.
+            PKGBUILD diffs in a terminal are overwhelming - most people skip past them. Atlas surfaces suspicious build patterns, maintainer changes, and source-level trust signals in a clean GUI, so you actually see the warning before you click install. Arch repos, AUR, Flatpak, and AppImage - all in one app, with themes, accent colors, and a ~30% faster launch in 0.14.
           </motion.p>
         </div>
 
@@ -275,7 +275,7 @@ export default function App() {
                 </div>
                 <h3 className="font-display font-semibold text-white text-sm">PKGBUILD Viewer & AUR Safety</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  A first-class build-recipe reader: syntax-highlighted PKGBUILD, risk summary, .install scriptlet tabs, maintainer/checksum panel, line-linked findings, and a "changed since your build" diff. Advisory only — never a gate.
+                  A first-class build-recipe reader: syntax-highlighted PKGBUILD, risk summary, .install scriptlet tabs, maintainer/checksum panel, line-linked findings, and a "changed since your build" diff. Advisory only - never a gate.
                 </p>
               </div>
               <div className="flex gap-1.5 select-none font-mono text-[9px]">
@@ -292,7 +292,7 @@ export default function App() {
                 </div>
                 <h3 className="font-display font-semibold text-white text-sm">Arch Maintenance Cockpit</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  System Health page with 10+ checks (DB-sync age, mirrorlist, pacman lock, keyring freshness, orphans, cache), a .pacnew center with per-file risk badges and read-only diffs, and a mirror manager showing the exact regenerate command. Pure Python, pure pywebview — no heavy runtimes.
+                  System Health page with 10+ checks (DB-sync age, mirrorlist, pacman lock, keyring freshness, orphans, cache), a .pacnew center with per-file risk badges and read-only diffs, and a mirror manager showing the exact regenerate command. Pure Python, pure pywebview - no heavy runtimes.
                 </p>
               </div>
               <div className="bg-slate-950 border border-slate-900 p-3 rounded-2xl font-mono text-[11px] leading-relaxed text-slate-500 w-full sm:w-auto shrink-0 select-none">
@@ -312,7 +312,7 @@ export default function App() {
                 </div>
                 <h3 className="font-display font-semibold text-white text-sm">Arch & AUR Stay Separated</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  AUR packages are community-maintained — Atlas keeps them visibly distinct with heuristic PKGBUILD scanning, maintainer-change advisories, orphan detection, out-of-date flags, vote counts, and AUR discovery buckets (Popular, Recent, VCS, Binary).
+                  AUR packages are community-maintained - Atlas keeps them visibly distinct with heuristic PKGBUILD scanning, maintainer-change advisories, orphan detection, out-of-date flags, vote counts, and AUR discovery buckets (Popular, Recent, VCS, Binary).
                 </p>
               </div>
               <div className="flex gap-1.5 select-none font-mono text-[9px]">
@@ -329,7 +329,7 @@ export default function App() {
                 </div>
                 <h3 className="font-display font-semibold text-white text-sm">Flatpak Transparency & Control</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Flatseal-grade permissions page (Share, Socket, Device, Filesystem, Bus, Environment) with in-app override editing via <code className="text-[10px] text-teal-300 bg-teal-950/30 px-1 rounded">flatpak override --user</code>. Detail-modal badges show FOSS/proprietary, verified/unverified, downloads, and an advisory safety tier. Every edit surfaces the exact override command — nothing hidden from CLI users.
+                  Flatseal-grade permissions page (Share, Socket, Device, Filesystem, Bus, Environment) with in-app override editing via <code className="text-[10px] text-teal-300 bg-teal-950/30 px-1 rounded">flatpak override --user</code>. Detail-modal badges show FOSS/proprietary, verified/unverified, downloads, and an advisory safety tier. Every edit surfaces the exact override command - nothing hidden from CLI users.
                 </p>
               </div>
               <div className="bg-slate-950 border border-slate-900 p-3 rounded-2xl font-mono text-[11px] leading-relaxed text-slate-500 w-full sm:w-auto shrink-0 select-none">

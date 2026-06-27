@@ -191,7 +191,7 @@ package() {
         {/* Audit Safety Banner */}
         <div className="bg-emerald-950/20 border-b border-slate-800 px-6 py-3 flex items-center space-x-2.5 text-emerald-400">
           <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span className="text-[11px] font-bold">Static Analysis: Low Risk — no suspicious execution patterns or pipes found.</span>
+          <span className="text-[11px] font-bold">Static Analysis: Low Risk - no suspicious execution patterns or pipes found.</span>
         </div>
 
         {/* Code Body with Line Numbers */}

@@ -57,7 +57,7 @@ export const HealthView: React.FC<HealthViewProps> = ({
       name: 'Database sync',
       status: 'attention' as const,
       icon: RefreshCw,
-      detail: 'Package databases last synced 7d ago. Update from the Updates page (a full upgrade — never a bare sync).',
+      detail: 'Package databases last synced 7d ago. Update from the Updates page (a full upgrade - never a bare sync).',
       actionLabel: 'Open Updates',
       actionHandler: () => onNavigate('updates')
     },

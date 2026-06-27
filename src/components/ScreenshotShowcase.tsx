@@ -34,7 +34,7 @@ const tabs: ScreenshotTab[] = [
     id: 'dashboard',
     label: 'Dashboard',
     description: 'Attention Center answering "what needs my attention today?"',
-    detailedDescription: 'The dashboard shows lazy, fail-open attention cards — pending updates, system safety warnings, reclaimable disk space, recent activity, and AUR safety advisories. A command palette (Ctrl+K) lets you jump to any page or action instantly.',
+    detailedDescription: 'The dashboard shows lazy, fail-open attention cards - pending updates, system safety warnings, reclaimable disk space, recent activity, and AUR safety advisories. A command palette (Ctrl+K) lets you jump to any page or action instantly.',
     icon: LayoutDashboard,
     features: ['Attention Center cards', 'Command palette (Ctrl+K)', 'Multi-source grouping', 'Fail-open design'],
     image: dashboardImg,
@@ -70,7 +70,7 @@ const tabs: ScreenshotTab[] = [
     id: 'apppanel',
     label: 'System Health',
     description: 'Arch maintenance cockpit with 10+ system checks.',
-    detailedDescription: 'System Health runs 10+ checks — DB-sync age, mirrorlist quality, pacman lock detection, .pacnew config files, orphaned packages, cache size, unused Flatpak runtimes, keyring freshness, and AUR index age. Each check offers a one-click safe action, including a gated "remove stale lock" that refuses while pacman is running.',
+    detailedDescription: 'System Health runs 10+ checks - DB-sync age, mirrorlist quality, pacman lock detection, .pacnew config files, orphaned packages, cache size, unused Flatpak runtimes, keyring freshness, and AUR index age. Each check offers a one-click safe action, including a gated "remove stale lock" that refuses while pacman is running.',
     icon: Cpu,
     features: ['Health checks', '.pacnew center', 'Keyring freshness', 'Mirror management'],
     image: apppanelImg,
@@ -216,7 +216,7 @@ export function ScreenshotShowcase() {
                 </div>
 
                 <div className="text-[10px] font-mono font-bold text-slate-500 tracking-wider uppercase truncate max-w-[200px] sm:max-w-none">
-                  Atlas — {activeTab.label}
+                  Atlas - {activeTab.label}
                 </div>
 
                 <button 
